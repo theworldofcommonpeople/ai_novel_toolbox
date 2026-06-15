@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI小说创作工具箱</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #121212;
+    --surface: #1E1E2E;
+    --card: #1A1A2A;
+    --border: #2A2A3A;
+    --primary: #7C4DFF;
+    --primary-dark: #651FFF;
+    --accent: #E94560;
+    --text-primary: #E0E0E0;
+    --text-secondary: #9E9E9E;
+    --text-hint: #616161;
+    --success: #4CAF50;
+    --warning: #FFC107;
+    --error: #F44336;
+    --info: #2196F3;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+  /* App Bar */
+  .app-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(18, 18, 18, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 56px;
+  }
+  .app-bar h1 {
+    font-size: 20px;
+    font-weight: 600;
+  }
+  .app-bar .actions {
+    display: flex;
+    gap: 8px;
+  }
+  .icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,0.08); }
+  .back-btn { font-size: 22px; }
+  /* Container */
+  .container { padding: 16px; max-width: 1200px; margin: 0 auto; }
+  /* Card Grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding-bottom: 24px;
+  }
+  @media (min-width: 768px) {
+    .grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (min-width: 1024px) {
+    .grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  .feature-card {
+    aspect-ratio: 0.88;
+    border-radius: 16px;
+    padding: 16px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .feature-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+  }
+  .feature-card .icon-wrap {
+    width: 48px;
+    height: 48px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    margin-bottom: auto;
+  }
+  .feature-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-top: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .feature-card p {
+    font-size: 12px;
+    opacity: 0.85;
+    margin-top: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  /* Form */
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+  }
+  .form-control {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-control:focus { border-color: var(--primary); }
+  textarea.form-control { resize: vertical; min-height: 80px; }
+  select.form-control { cursor: pointer; }
+  /* Buttons */
+  .btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: opacity 0.2s, transform 0.1s;
+    font-family: inherit;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+  }
+  .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+  .btn-outlined {
+    background: transparent;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+  }
+  .btn-block { width: 100%; }
+  .btn-large { padding: 14px; font-size: 15px; }
+  /* Section */
+  .section { margin-bottom: 28px; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    color: var(--primary);
+  }
+  .section-header h2 {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  /* Result */
+  .result-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+    white-space: pre-wrap;
+    line-height: 1.7;
+    font-size: 14px;
+    min-height: 200px;
+  }
+  .result-area.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+  }
+  .loading {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  .loading.lg { width: 48px; height: 48px; border-width: 3px; border-top-color: var(--primary); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  /* Switch */
+  .switch-row {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: var(--surface);
+    border-radius: 12px;
+    gap: 12px;
+  }
+  .switch-row .icon { color: var(--primary); font-size: 20px; }
+  .switch-row .text { flex: 1; }
+  .switch-row .text .title { font-weight: 500; font-size: 14px; }
+  .switch-row .text .sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: var(--text-hint);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .switch.on { background: var(--primary); }
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: left 0.2s;
+  }
+  .switch.on::after { left: 22px; }
+  /* Status indicator */
+  .status-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+  .status-dot.on { background: var(--success); }
+  .status-dot.off { background: var(--text-hint); }
+  /* Snackbar */
+  .snackbar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--surface);
+    color: var(--text-primary);
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    z-index: 1000;
+    transition: transform 0.3s;
+    max-width: 90%;
+  }
+  .snackbar.show { transform: translateX(-50%) translateY(0); }
+  .snackbar.error { background: var(--error); }
+  .snackbar.success { background: var(--success); }
+  /* Book Cover Templates */
+  .book-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .book-cover {
+    aspect-ratio: 0.7;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .book-cover .book-title {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    color: white;
+    font-weight: 700;
+    font-size: 18px;
+    text-align: center;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    z-index: 2;
+    line-height: 1.3;
+    word-break: break-word;
+  }
+  .book-cover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, transparent 30%, rgba(0,0,0,0.5) 70%, rgba(0,0,0,0.7) 100%);
+  }
+  .book-cover .style-tag {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0,0,0,0.54);
+    color: rgba(255,255,255,0.85);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    z-index: 3;
+  }
+  /* Character Card */
+  .char-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .char-card .char-head {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 12px;
+  }
+  .char-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(124,77,255,0.3);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .char-info { flex: 1; min-width: 0; }
+  .char-name { font-weight: 600; font-size: 15px; }
+  .char-meta { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+  .char-meta .chip {
+    background: rgba(124,77,255,0.15);
+    color: var(--primary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+  .char-actions { display: flex; gap: 4px; }
+  .char-actions button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 6px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .char-actions button:hover { background: rgba(255,255,255,0.08); }
+  .char-actions button.danger { color: #FCA5A5; }
+  .char-detail {
+    padding: 0 16px 16px;
+    border-top: 1px solid var(--border);
+  }
+  .char-detail .attr-row {
+    margin-top: 4px;
+    font-size: 12px;
+  }
+  .char-detail .attr-label { color: var(--primary); font-weight: 600; }
+  .char-detail .attr-value { color: var(--text-primary); }
+  .char-detail .timestamp { color: var(--text-hint); font-size: 11px; margin-top: 8px; }
+  /* Modal */
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 16px;
+  }
+  .modal.show { display: flex; }
+  .modal-content {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 20px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-content h3 {
+    margin-bottom: 16px;
+    font-size: 18px;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 16px;
+  }
+  /* FAB */
+  .fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 50;
+  }
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-hint);
+  }
+  .empty-state .icon { font-size: 48px; opacity: 0.4; }
+  .empty-state h3 { font-size: 18px; margin-top: 12px; color: rgba(255,255,255,0.4); }
+  .empty-state p { font-size: 14px; margin-top: 6px; color: rgba(255,255,255,0.3); }
+  /* Conflict card */
+  .conflict-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+  .conflict-card .ch-title {
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .conflict-card .ch-preview {
+    color: var(--text-primary);
+    font-size: 12px;
+    margin-top: 2px;
+  }
+  .conflict-reason {
+    background: rgba(255,152,0,0.1);
+    border: 1px solid rgba(255,152,0,0.3);
+    color: #FFA726;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .conflict-modified {
+    background: rgba(76,175,80,0.08);
+    border: 1px solid rgba(76,175,80,0.2);
+    color: #C8E6C9;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    margin-top: 8px;
+  }
+  .progress-bar {
+    background: var(--text-hint);
+    height: 4px;
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 8px 0;
+  }
+  .progress-bar .fill {
+    background: var(--primary);
+    height: 100%;
+    transition: width 0.3s;
+  }
+  /* Checkbox */
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+  }
+  .checkbox {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--text-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .checkbox.checked {
+    background: var(--primary);
+    border-color: var(--primary);
+  }
+  .checkbox.checked::after {
+    content: '✓';
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  /* Status banner */
+  .status-banner {
+    background: rgba(33,150,243,0.1);
+    border: 1px solid rgba(33,150,243,0.3);
+    color: var(--info);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  /* Diff viewer */
+  .diff-container {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 12px;
+    line-height: 1.8;
+    font-size: 14px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  .diff-add { background: rgba(76,175,80,0.2); color: #A5D6A7; padding: 2px; }
+  .diff-del { background: rgba(244,67,54,0.2); color: #EF9A9A; text-decoration: line-through; padding: 2px; }
+  .diff-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--surface);
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+  /* View container */
+  .view { display: none; }
+  .view.active { display: block; }
+  /* Page heading */
+  .page-title {
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .muted { color: var(--text-secondary); }
+  .hint-text { color: var(--text-hint); font-size: 13px; }
+  /* Cover image preview */
+  .cover-preview {
+    width: 100%;
+    height: 400px;
+    background: var(--surface);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 16px;
+    position: relative;
+  }
+  .cover-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  /* Image placeholder */
+  .image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: var(--text-hint);
+    gap: 8px;
+  }
+  .row { display: flex; gap: 12px; align-items: center; }
+  .row > * { flex: 1; }
+</style>
+</head>
+<body>
+  <!-- App Bar -->
+  <div class="app-bar" id="appBar">
+    <button class="icon-btn back-btn" id="backBtn" style="display:none" onclick="goBack()">←</button>
+    <h1 class="page-title" id="pageTitle">AI小说创作工具箱</h1>
+    <div class="actions" id="appActions">
+      <button class="icon-btn" onclick="showView('settings')" title="设置">⚙</button>
+    </div>
+  </div>
+
+  <!-- HOME VIEW -->
+  <div class="view active" id="view-home">
+    <div class="container">
+      <div class="grid" id="featureGrid"></div>
+    </div>
+  </div>
+
+  <!-- GENERATOR VIEW (动态生成器) -->
+  <div class="view" id="view-generator">
+    <div class="container" id="generatorContent"></div>
+  </div>
+
+  <!-- BOOKNAME TEST VIEW -->
+  <div class="view" id="view-bookTest">
+    <div class="container">
+      <div class="section">
+        <input class="form-control" id="bookTitleInput" placeholder="输入小说书名，自动预览封面效果" oninput="renderBookCovers()">
+      </div>
+      <p class="hint-text" style="text-align:center;padding:24px 0" id="bookHint">在上方输入书名，查看在不同封面模板上的效果</p>
+      <div class="book-grid" id="bookGrid" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- COVER GENERATOR VIEW -->
+  <div class="view" id="view-coverGen">
+    <div class="container">
+      <div class="form-group">
+        <label class="form-label">书名</label>
+        <input class="form-control" id="coverTitleInput" placeholder="请输入小说书名">
+      </div>
+      <div class="form-group">
+        <label class="form-label">封面描述</label>
+        <textarea class="form-control" id="coverDescInput" rows="4" placeholder="描述你想要的封面风格、场景、色调等..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">图像尺寸</label>
+        <select class="form-control" id="coverSizeSelect">
+          <option value="1024x1024">正方形 (1024x1024)</option>
+          <option value="1792x1024">横版 (1792x1024)</option>
+          <option value="1024x1792">竖版 (1024x1792)</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-block btn-large" onclick="generateCover()">
+        <span>✨</span> 生成封面
+      </button>
+      <div id="coverResult"></div>
+    </div>
+  </div>
+
+  <!-- CHARACTER LIST VIEW -->
+  <div class="view" id="view-characterList">
+    <div class="container" id="characterListContent"></div>
+    <button class="fab" onclick="showAddCharacterModal()">+ 添加角色</button>
+  </div>
+
+  <!-- CONSISTENCY CHECK VIEW -->
+  <div class="view" id="view-consistencyCheck">
+    <div class="container" id="consistencyContent"></div>
+  </div>
+
+  <!-- SETTINGS VIEW -->
+  <div class="view" id="view-settings">
+    <div class="container">
+      <div class="section">
+        <div class="section-header">
+          <span>☁</span>
+          <h2>云端文本API配置</h2>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Base URL</label>
+          <input class="form-control" id="setTextBaseUrl" placeholder="https://api.openai.com/v1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">API Key</label>
+          <div style="position:relative">
+            <input class="form-control" id="setTextApiKey" type="password" placeholder="sk-...">
+            <button class="icon-btn" style="position:absolute;right:4px;top:50%;transform:translateY(-50%)" onclick="toggleVisibility('setTextApiKey', this)">👁</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Model Name</label>
+          <input class="form-control" id="setTextModel" placeholder="gpt-4o">
+        </div>
+        <button class="btn btn-outlined" style="float:right" onclick="testConnection()">测试连接</button>
+        <div style="clear:both"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <span>🖼</span>
+          <h2>云端图片API配置</h2>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Image Base URL</label>
+          <input class="form-control" id="setImageBaseUrl" placeholder="https://api.openai.com/v1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Image API Key</label>
+          <div style="position:relative">
+            <input class="form-control" id="setImageApiKey" type="password" placeholder="sk-...">
+            <button class="icon-btn" style="position:absolute;right:4px;top:50%;transform:translateY(-50%)" onclick="toggleVisibility('setImageApiKey', this)">👁</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Image Model</label>
+          <input class="form-control" id="setImageModel" placeholder="dall-e-3">
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <span>💻</span>
+          <h2>本地模型</h2>
+        </div>
+        <div class="card">
+          <div class="row" style="margin-bottom:12px">
+            <span class="muted">模型路径：</span>
+          </div>
+          <input class="form-control" id="setLocalModelPath" placeholder="选择本地模型路径（.gguf 文件）" readonly>
+          <div style="margin-top:12px" class="row">
+            <div>
+              <span class="status-dot off" id="modelStatusDot"></span>
+              <span id="modelStatusText" class="muted">未加载</span>
+            </div>
+            <button class="btn btn-outlined" onclick="toggleLocalModel()" id="modelToggleBtn">加载</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <span>⚙</span>
+          <h2>生成偏好</h2>
+        </div>
+        <div class="switch-row" onclick="toggleSwitch(this)">
+          <span class="icon">✓</span>
+          <div class="text">
+            <div class="title">优先使用云端API</div>
+            <div class="sub">开启后将优先通过云端API生成内容，关闭则使用本地模型</div>
+          </div>
+          <div class="switch on"></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <span>🧠</span>
+          <h2>RAG功能</h2>
+        </div>
+        <div class="switch-row" onclick="toggleSwitch(this)">
+          <span class="icon">🔍</span>
+          <div class="text">
+            <div class="title">启用RAG检索增强生成</div>
+            <div class="sub">开启后将在生成时检索本地知识库以提供上下文参考</div>
+          </div>
+          <div class="switch on"></div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block btn-large" onclick="saveSettings()">💾 保存设置</button>
+    </div>
+  </div>
+
+  <!-- Character Edit Modal -->
+  <div class="modal" id="characterModal">
+    <div class="modal-content">
+      <h3 id="charModalTitle">添加角色</h3>
+      <div class="form-group">
+        <label class="form-label">角色名称</label>
+        <input class="form-control" id="charNameInput" placeholder="请输入角色名称">
+      </div>
+      <div class="form-group">
+        <label class="form-label">角色卡 JSON</label>
+        <textarea class="form-control" id="charJsonInput" rows="10" placeholder='{
+  "name": "角色名",
+  "gender": "男",
+  "age": "25",
+  "personality": "性格描述",
+  "background": "背景故事",
+  "appearance": "外貌描述",
+  "role": "主角",
+  "ability": "能力",
+  "goal": "目标",
+  "motto": "口头禅",
+  "relationship": "人际关系"
+}'></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outlined" onclick="closeCharacterModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveCharacter()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Diff Modal -->
+  <div class="modal" id="diffModal">
+    <div class="modal-content">
+      <h3>修改对比</h3>
+      <div class="diff-toolbar">
+        <span class="muted" id="diffStats"></span>
+      </div>
+      <div class="diff-container" id="diffContent"></div>
+      <div class="modal-actions">
+        <button class="btn btn-outlined" onclick="closeDiffModal()">关闭</button>
+        <button class="btn btn-primary" onclick="confirmDiff()">确认修改</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="snackbar" id="snackbar"></div>
+
+<script>
+/* =========================================
+   AI 小说创作工具箱 - HTML/JavaScript 版本
+   ========================================= */
+
+// 生成器配置
+const GENERATORS = [
+  { type: 'brain_hole', name: '小说脑洞', icon: '💡', desc: '生成新颖、反套路、有冲突感的小说脑洞', gradient: 'linear-gradient(135deg,#6C63FF,#3F3D9E)' },
+  { type: 'book_name', name: '书名生成', icon: '📚', desc: '根据小说类型生成吸量书名', gradient: 'linear-gradient(135deg,#E040FB,#9C27B0)' },
+  { type: 'book_test', name: '书测', icon: '🔬', desc: '对小说进行多维度测试评估', gradient: 'linear-gradient(135deg,#448AFF,#1565C0)' },
+  { type: 'synopsis', name: '小说简介', icon: '📝', desc: '根据书名和梗概生成300字以内的小说简介', gradient: 'linear-gradient(135deg,#00BCD4,#00838F)' },
+  { type: 'outline', name: '故事大纲', icon: '🌳', desc: '三幕式大纲创作：开端-发展-高潮-结局', gradient: 'linear-gradient(135deg,#4CAF50,#2E7D32)' },
+  { type: 'detail_outline', name: '章节细纲', icon: '🔢', desc: '将大纲拆解为每章500-800字的细纲', gradient: 'linear-gradient(135deg,#FF6D00,#E65100)' },
+  { type: 'golden_opening', name: '黄金开篇', icon: '✨', desc: '写出小说前800字的开篇', gradient: 'linear-gradient(135deg,#FF4081,#C51162)' },
+  { type: 'golden_finger', name: '金手指设计', icon: '👆', desc: '为主角设计独特有趣的金手指', gradient: 'linear-gradient(135deg,#7C4DFF,#651FFF)' },
+  { type: 'name_gen', name: '命名生成器', icon: '✏', desc: '生成人名、地名、物品名、势力名', gradient: 'linear-gradient(135deg,#00E5FF,#00B8D4)' },
+  { type: 'character_design', name: '角色设计', icon: '👤', desc: '创建完整角色设定', gradient: 'linear-gradient(135deg,#69F0AE,#00C853)' },
+  { type: 'world_building', name: '世界观构建', icon: '🌐', desc: '构建完整世界观', gradient: 'linear-gradient(135deg,#FFD740,#FFAB00)' },
+  { type: 'glossary', name: '词条百科', icon: '📖', desc: '生成道具、技能、功法、法宝等词条', gradient: 'linear-gradient(135deg,#FF6E40,#DD2C00)' },
+  // 特殊卡片
+  { type: '_book_test', name: '书名测试', icon: '🖼', desc: '测试小说书名的吸引力', gradient: 'linear-gradient(135deg,#40C4FF,#0091EA)' },
+  { type: '_cover_gen', name: '封面生成器', icon: '🎨', desc: 'AI生成精美小说封面与宣传图', gradient: 'linear-gradient(135deg,#B388FF,#7C4DFF)' },
+  { type: '_character_list', name: '角色卡管理', icon: '👥', desc: '集中管理所有小说角色设定卡片', gradient: 'linear-gradient(135deg,#FF80AB,#F50057)' },
+  { type: '_consistency', name: '一致性检查', icon: '✔', desc: '检查跨章节内容逻辑与设定一致性', gradient: 'linear-gradient(135deg,#84FFFF,#18FFFF)' },
+];
+
+// 生成器参数定义
+const GEN_PARAMS = {
+  brain_hole: { prompt: '请生成一个新颖、反套路、有冲突感的小说脑洞，包含核心设定、主角目标和意外转折。风格：让人眼前一亮。', params: [] },
+  book_name: { prompt: '为{{genre}}小说生成10个吸量书名，要求：短小精悍、有悬念感、符合网文风格。', params: [
+    { key: 'genre', label: '小说类型', type: 'dropdown', options: ['玄幻','都市','科幻','古代','悬疑','游戏','末世','无限流'] }
+  ]},
+  book_test: { prompt: '请对以下小说内容进行多维度测试评估，包括：开篇吸引力、节奏把控、人设魅力、爽点密度、悬念设计、文笔流畅度。\n\n小说内容：\n{{content}}', params: [
+    { key: 'content', label: '小说内容', type: 'multiline' }
+  ]},
+  synopsis: { prompt: '根据书名《{{bookName}}》和故事梗概：{{summary}}，写一段300字以内的小说简介，突出爽点和期待。', params: [
+    { key: 'bookName', label: '书名', type: 'text' },
+    { key: 'summary', label: '故事梗概', type: 'multiline' }
+  ]},
+  outline: { prompt: '为{{genre}}小说创作完整大纲。主角：{{protagonist}}。核心冲突：{{conflict}}。输出格式：三幕式（开端-发展-高潮-结局），每幕3-5个情节节点。', params: [
+    { key: 'genre', label: '小说类型', type: 'dropdown', options: ['玄幻','都市','科幻','古代','悬疑','游戏','末世','无限流'] },
+    { key: 'protagonist', label: '主角描述', type: 'text' },
+    { key: 'conflict', label: '核心冲突', type: 'multiline' }
+  ]},
+  detail_outline: { prompt: '将以下大纲拆解为每章500-800字的细纲，共{{chapterCount}}章。每章包含：本章核心事件、冲突点、结尾钩子。\n\n大纲内容：\n{{outline}}', params: [
+    { key: 'chapterCount', label: '章节数', type: 'number' },
+    { key: 'outline', label: '大纲内容', type: 'multiline' }
+  ]},
+  golden_opening: { prompt: '根据以下设定，写出小说前800字的开篇。要求：快速带入主角、展示金手指或冲突、结尾留有悬念。\n\n设定：\n{{setting}}', params: [
+    { key: 'setting', label: '故事设定', type: 'multiline' }
+  ]},
+  golden_finger: { prompt: '为主角设计一个独特且有趣的金手指。类型：{{type}}。要求：有成长性、有限制、能制造爽点。', params: [
+    { key: 'type', label: '金手指类型', type: 'dropdown', options: ['系统','重生','异能','知识','血脉','奇遇','穿越','其他'] }
+  ]},
+  name_gen: { prompt: '生成{{count}}个{{category}}名字，风格：{{style}}。', params: [
+    { key: 'count', label: '生成数量', type: 'number' },
+    { key: 'category', label: '名字类别', type: 'dropdown', options: ['人名','地名','物品名','势力名'] },
+    { key: 'style', label: '风格', type: 'dropdown', options: ['东方','西方','奇幻','科幻','古风','现代'] }
+  ]},
+  character_design: { prompt: '创建一个{{gender}}角色，职业：{{job}}，性格：{{personality}}。输出：姓名、年龄、外貌、性格、背景故事、核心欲望、成长弧、口头禅/标志动作。', params: [
+    { key: 'gender', label: '性别', type: 'dropdown', options: ['男','女','不限'] },
+    { key: 'job', label: '职业', type: 'text' },
+    { key: 'personality', label: '性格', type: 'dropdown', options: ['开朗阳光','阴郁深沉','傲娇毒舌','温柔善良','冷酷无情','热血冲动','腹黑狡诈','呆萌天真'] }
+  ]},
+  world_building: { prompt: '构建一个{{genre}}世界观，包含：世界名称、整体氛围、主要种族/势力、独特规则、历史关键事件、当前矛盾。', params: [
+    { key: 'genre', label: '世界观类型', type: 'dropdown', options: ['东方玄幻','西方奇幻','科幻未来','末日废土','修真仙侠','异世大陆','都市异能'] }
+  ]},
+  glossary: { prompt: '生成{{count}}个{{type}}词条。每个词条包含：名称、稀有度、效果描述、使用限制、背景故事。', params: [
+    { key: 'count', label: '生成数量', type: 'number' },
+    { key: 'type', label: '词条类型', type: 'dropdown', options: ['道具','技能','功法','法宝','丹药','阵法','灵兽'] }
+  ]}
+};
+
+// 封面模板
+const BOOK_TEMPLATES = [
+  { id: 'template_1', name: '玄幻仙侠', bg: 'linear-gradient(135deg,#4A148C,#7B1FA2,#9C27B0)' },
+  { id: 'template_2', name: '都市现代', bg: 'linear-gradient(135deg,#1B5E20,#388E3C,#66BB6A)' },
+  { id: 'template_3', name: '古风典雅', bg: 'linear-gradient(135deg,#8D6E63,#A1887F,#BCAAA4)' },
+  { id: 'template_4', name: '科幻未来', bg: 'linear-gradient(135deg,#01579B,#0277BD,#039BE5)' },
+  { id: 'template_5', name: '暗黑悬疑', bg: 'linear-gradient(135deg,#212121,#424242,#616161)' }
+];
+
+const POSITION_RATIO = { template_1: 0.08, template_2: 0.72, template_3: 0.08, template_4: 0.72, template_5: 0.40 };
+
+// 状态管理
+const state = {
+  settings: JSON.parse(localStorage.getItem('ai_novel_settings') || '{}'),
+  characters: JSON.parse(localStorage.getItem('ai_novel_characters') || '[]'),
+  history: JSON.parse(localStorage.getItem('ai_novel_history') || '[]'),
+  currentView: 'home',
+  viewStack: ['home'],
+  localModelLoaded: false,
+  currentGenerator: null,
+  currentDiffItem: null,
+  currentEditingCharId: null,
+  conflicts: []
+};
+
+if (!state.settings.useCloudFirst === undefined) state.settings.useCloudFirst = true;
+if (state.settings.ragEnabled === undefined) state.settings.ragEnabled = true;
+
+// 初始化
+function init() {
+  renderHome();
+  loadSettings();
+  renderCharacters();
+  initConsistencyPage();
+}
+
+function renderHome() {
+  const grid = document.getElementById('featureGrid');
+  grid.innerHTML = GENERATORS.map(g => `
+    <div class="feature-card" style="background:${g.gradient}" onclick="handleFeatureClick('${g.type}')">
+      <div class="icon-wrap">${g.icon}</div>
+      <h3>${g.name}</h3>
+      <p>${g.desc}</p>
+    </div>
+  `).join('');
+}
+
+function handleFeatureClick(type) {
+  if (type === '_book_test') showView('bookTest');
+  else if (type === '_cover_gen') showView('coverGen');
+  else if (type === '_character_list') showView('characterList');
+  else if (type === '_consistency') showView('consistencyCheck');
+  else showGenerator(type);
+}
+
+function showView(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  state.currentView = view;
+  state.viewStack.push(view);
+  updateAppBar();
+  if (view === 'bookTest') renderBookCovers();
+  if (view === 'characterList') renderCharacters();
+  if (view === 'consistencyCheck') initConsistencyPage();
+}
+
+function showGenerator(type) {
+  state.currentGenerator = type;
+  const gen = GEN_PARAMS[type];
+  const meta = GENERATORS.find(g => g.type === type);
+  document.getElementById('pageTitle').textContent = meta.name;
+  const content = document.getElementById('generatorContent');
+  let formHtml = '';
+  if (gen.params.length === 0) {
+    formHtml = '<p class="hint-text" style="text-align:center;padding:24px 0">无需参数，点击下方按钮直接生成</p>';
+  } else {
+    formHtml = gen.params.map(p => {
+      let input = '';
+      if (p.type === 'text' || p.type === 'number') {
+        input = `<input class="form-control" type="${p.type === 'number' ? 'number' : 'text'}" id="gen_${p.key}" placeholder="请输入${p.label}">`;
+      } else if (p.type === 'multiline') {
+        input = `<textarea class="form-control" id="gen_${p.key}" rows="4" placeholder="请输入${p.label}"></textarea>`;
+      } else if (p.type === 'dropdown') {
+        input = `<select class="form-control" id="gen_${p.key}">${p.options.map(o => `<option value="${o}">${o}</option>`).join('')}</select>`;
+      }
+      return `<div class="form-group"><label class="form-label">${p.label}</label>${input}</div>`;
+    }).join('');
+  }
+  content.innerHTML = `
+    <div class="section">${formHtml}</div>
+    <button class="btn btn-primary btn-block btn-large" id="genBtn" onclick="runGenerator()">
+      <span>✨</span> <span id="genBtnText">开始生成</span>
+    </button>
+    <div id="genResult"></div>
+  `;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-generator').classList.add('active');
+  state.currentView = 'generator';
+  state.viewStack.push('generator');
+  updateAppBar();
+}
+
+function goBack() {
+  if (state.viewStack.length > 1) {
+    state.viewStack.pop();
+    const prev = state.viewStack[state.viewStack.length - 1];
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + prev).classList.add('active');
+    state.currentView = prev;
+    updateAppBar();
+  }
+}
+
+function updateAppBar() {
+  const back = document.getElementById('backBtn');
+  const actions = document.getElementById('appActions');
+  const title = document.getElementById('pageTitle');
+  if (state.currentView === 'home') {
+    back.style.display = 'none';
+    actions.style.display = 'flex';
+    title.textContent = 'AI小说创作工具箱';
+  } else {
+    back.style.display = 'block';
+    if (state.currentView === 'generator' || state.currentView === 'bookTest' || state.currentView === 'coverGen' ||
+        state.currentView === 'characterList' || state.currentView === 'consistencyCheck') {
+      actions.style.display = 'none';
+    } else {
+      actions.style.display = 'flex';
+    }
+  }
+}
+
+// 模拟 AI 生成 (前端演示版)
+function runGenerator() {
+  const type = state.currentGenerator;
+  const gen = GEN_PARAMS[type];
+  // 校验
+  const values = {};
+  let valid = true;
+  for (const p of gen.params) {
+    const el = document.getElementById('gen_' + p.key);
+    const v = (el.value || '').trim();
+    if (!v) { valid = false; break; }
+    values[p.key] = v;
+  }
+  if (!valid) { showSnack('请填写所有必填参数', 'error'); return; }
+  // 渲染 prompt
+  let prompt = gen.prompt;
+  for (const k in values) prompt = prompt.replaceAll('{{' + k + '}}', values[k]);
+  // 模拟生成
+  document.getElementById('genBtn').disabled = true;
+  document.getElementById('genBtnText').innerHTML = '<span class="loading"></span> 生成中...';
+  document.getElementById('genResult').innerHTML = `
+    <div class="result-area empty">
+      <div style="text-align:center">
+        <div class="loading lg"></div>
+        <p style="margin-top:16px" class="muted">AI 正在生成中...</p>
+      </div>
+    </div>
+  `;
+  setTimeout(() => {
+    const text = mockGenerate(type, values);
+    document.getElementById('genResult').innerHTML = `
+      <div class="result-area">${escapeHtml(text)}</div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-outlined" onclick="copyResult(\`${escapeAttr(text)}\`)">📋 复制</button>
+        <button class="btn btn-outlined" onclick="runGenerator()">🔄 重新生成</button>
+        <button class="btn btn-primary" onclick='saveResult("${type}", \`${escapeAttr(text)}\`)'>💾 保存</button>
+      </div>
+    `;
+    document.getElementById('genBtn').disabled = false;
+    document.getElementById('genBtnText').textContent = '开始生成';
+  }, 1200);
+}
+
+function mockGenerate(type, values) {
+  const samples = {
+    brain_hole: `【核心设定】末世降临第7年，旧文明遗迹突然出现"时间回溯装置"，但每次使用都需要以"未来某个人的死亡"为代价。
+
+【主角目标】林默——考古系大三学生，无意间激活装置后，被迫卷入跨时空追捕游戏。他需要找出"装置的真正主人"，在拯救与毁灭之间做出抉择。
+
+【意外转折】他发现每一次"使用代价"死亡的人，都是另一个时间线的自己——而真正的主谋，是三十年后已经成为世界霸主的"林默"本人。`,
+    book_name: values.genre ? `为【${values.genre}】类生成书名：\n1. 《${values.genre}之巅：我以一剑破苍穹》\n2. 《重生${values.genre}：开局就送SSS级天赋》\n3. 《${values.genre}：从废物到最强》\n4. 《我在${values.genre}里当大佬》\n5. 《${values.genre}：开局捡到一本天书》\n6. 《我，${values.genre}之主》\n7. 《${values.genre}：这个主角我当定了》\n8. 《穿越${values.genre}：我的金手指有点狠》\n9. 《${values.genre}最强装逼指南》\n10. 《${values.genre}无双：开局我无敌了》` : '',
+    synopsis: values.bookName ? `《${values.bookName}》\n\n${values.summary || '神秘少年' }。他本该平凡度日，奈何命运弄人，一段惊心动魄的旅程就此展开。\n\n且看他如何逆境翻盘，纵横天下，收获爱情与友情，走上人生巅峰。这是一个关于成长、热血与羁绊的故事。` : '',
+    outline: values.protagonist ? `【开端】\n1. ${values.protagonist}出场，介绍其身份与背景\n2. 触发核心事件，引入${values.conflict || '主要矛盾'}\n3. 获得金手指或导师指点\n\n【发展】\n4. 初次试炼失败，重新崛起\n5. 遇见同伴，建立团队\n6. 与反派正面冲突\n7. 揭露世界真相的冰山一角\n\n【高潮】\n8. 最大危机降临\n9. 主角觉醒/突破\n10. 终局之战\n\n【结局】\n11. 决战与新生\n12. 新的旅程展望` : '',
+    detail_outline: values.outline ? `共${values.chapterCount || 10}章细纲示例：\n\n第一章：楔子\n核心事件：主角意外获得神秘遗物\n冲突点：被卷入家族内部纷争\n结尾钩子：遗物中似乎封印着远古大能的残魂\n\n第二章：初露锋芒\n核心事件：测试实力，一鸣惊人\n冲突点：曾看不起主角的同门师兄反被踩\n结尾钩子：神秘势力开始注意主角\n\n（后续章节略...）` : '',
+    golden_opening: values.setting ? `${values.setting}\n\n电闪雷鸣之夜。\n\n他猛然睁开眼睛，瞳孔中倒映着一抹难以名状的幽光。\n\n"这一世，我绝不再重蹈覆辙。"\n\n压抑了十八年的愤怒与不甘，在这一刻如火山般喷涌而出。前世他被挚友背叛，被至亲抛弃，从云端跌落至地狱，尝遍人间冷暖，最终惨死于乱刀之下。\n\n老天有眼，让他重活一世。\n\n这一世，他要改写命运。这一世，他要所有仇敌付出代价。这一世——\n\n他要站在世界之巅！\n\n远处，敲门声骤然响起。` : '',
+    golden_finger: values.type ? `【金手指：${values.type}流】\n\n【名称】命运编辑器\n\n【能力】主角可以"看见"所有生物头顶的"命运值"，并消耗自身寿命进行微调。每个选择都将引发蝴蝶效应，造就截然不同的剧情走向。\n\n【成长性】\n- 初级：可修改小事件（如买菜多付一文钱）\n- 中级：可修改中等事件（如对手的一次失败）\n- 高级：可修改重大事件（如王朝更替）\n\n【限制】\n- 每次修改消耗主角1天-1年寿命不等\n- 修改越大的事件，消耗寿命越多\n- 不可直接修改自身命运\n- 不可超过命运本身的"权重"上限\n\n【爽点设计】\n- 反派精心策划的阴谋，被主角轻松看破并反制\n- 装逼于无形，深藏功与名\n- 长线伏笔回收，读者惊呼"原来如此"` : '',
+    name_gen: values.count ? `${values.category} - ${values.style}风格 × ${values.count}个：\n\n${Array.from({length: Math.min(values.count, 10)}, (_, i) => `${i+1}. ${mockName(values.category, values.style)}`).join('\n')}` : '',
+    character_design: `【姓名】云墨\n【年龄】22\n【性别】${values.gender || '男'}\n【职业】${values.job || '剑修'}\n【性格】${values.personality || '腹黑狡诈'}\n【外貌】身高185cm，身形修长，黑发金瞳，气质冷峻\n【背景】前朝遗孤，自幼被仇人抚养成人，习得一身惊世本领\n【核心欲望】复仇、寻找身世真相\n【成长弧】从冷酷复仇者转变为心怀天下的英雄\n【口头禅】"棋局已定"\n【标志动作】轻抚腰间佩剑的穗子`,
+    world_building: values.genre ? `【${values.genre} - 世界观】\n\n【世界名称】九天玄陆\n\n【整体氛围】宏大壮阔、神秘诡谲，仙凡共存，神魔隐匿于云端。\n\n【主要种族/势力】\n1. 仙盟——正道教派之首，掌控修仙界秩序\n2. 魔渊——魔族最后栖息地，与仙盟对立千年\n3. 散修联盟——不愿受仙盟约束的独立势力\n4. 凡人王朝——由数十个帝国构成，夹缝求生\n\n【独特规则】\n- 修为分九境，每境九重天\n- 渡劫失败者将魂飞魄散\n- 凡人无法感知灵气\n\n【历史关键事件】\n- 远古"神魔大战"导致世界破碎\n- 上古封神之战，仙魔二族元气大伤\n- 三千年前的"末法时代"，灵气枯竭百年\n\n【当前矛盾】\n- 仙盟内部腐朽，年轻一代寻求变革\n- 魔渊蠢蠢欲动，意图东山再起\n- 一把传说中的"禁忌之剑"重出江湖` : '',
+    glossary: values.count ? `共${values.count}个${values.type}词条：\n\n【${values.type}1：九天雷火】\n稀有度：传说\n效果：召唤九天雷火，可焚尽一切\n限制：每日仅能使用一次，消耗修为50%\n背景：上古雷神的随身法宝\n\n【${values.type}2：寒冰剑】\n稀有度：史诗\n效果：剑身凝聚极寒之力，触之即冻\n限制：需以剑道修为催动\n背景：三千年前北境剑宗宗主佩剑\n\n（更多词条...）` : ''
+  };
+  return samples[type] || '生成结果示例：这是一段模拟的AI生成内容。在真实环境中，此处将展示由AI模型创作的小说内容。';
+}
+
+function mockName(category, style) {
+  const data = {
+    '东方': { '人名': ['云墨','青衫客','苏长卿','李逍遥','柳如烟','陈北玄','叶轻眉','顾长歌','苏暮雨','白小纯'],
+             '地名': ['青云山','桃花岛','幽冥海','九霄城','玉龙雪山','天涯海角','昆仑仙境','蓬莱仙岛','万妖森林','天都峰'],
+             '物品名': ['碧海青天剑','紫电青霜','神木鼎','天蚕宝衣','玄铁重剑','混元金斗','九霄环佩','琉璃盏','玉清琉璃盏','定海神珠'],
+             '势力名': ['天机阁','幽冥殿','青云宗','玄天圣地','万妖盟','剑道盟','百花宫','九幽冥府','天外天','妙音坊'] },
+    '西方': { '人名': ['Arthur','Morgana','Galahad','Elowen','Thalion','Lyra','Cedric','Isolde','Rowan','Aria'],
+              '地名': ['Eldoria','Neverwinter','Silvermoon','Dragonreach','Stormhold','Frostvale','Sunspire','Mistwood','Goldhaven','Crystal Lake'],
+              '物品名': ['Excalibur','Mjolnir','Soulstone','Crystal of Eternity','Phoenix Feather','Shadow Cloak','Dragon Scale','Crown of Kings','Staff of Light','Amulet of Time'],
+              '势力名': ['The Silver Hand','The Crimson Brotherhood','The Eternal Watch','House of Lions','The Shadow Court','The Phoenix Guild','The Iron Order','The Whispering Woods','The Golden Legion','The Obsidian Circle'] }
+  };
+  const pool = (data[style] && data[style][category]) || data['东方']['人名'];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function copyResult(text) {
+  navigator.clipboard.writeText(text).then(() => showSnack('已复制到剪贴板', 'success'));
+}
+
+function saveResult(type, content) {
+  const meta = GENERATORS.find(g => g.type === type);
+  state.history.unshift({
+    id: Date.now(),
+    generatorType: type,
+    generatorName: meta.name,
+    content: content,
+    timestamp: Date.now()
+  });
+  localStorage.setItem('ai_novel_history', JSON.stringify(state.history));
+  showSnack('保存成功', 'success');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+function escapeAttr(s) {
+  return String(s).replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$/g,'\\$').replace(/\n/g,'\\n').replace(/"/g,'\\"');
+}
+
+function showSnack(msg, type) {
+  const sb = document.getElementById('snackbar');
+  sb.textContent = msg;
+  sb.className = 'snackbar show' + (type ? ' ' + type : '');
+  setTimeout(() => sb.className = 'snackbar', 2000);
+}
+
+// ============== 封面生成 ==============
+function generateCover() {
+  const title = document.getElementById('coverTitleInput').value.trim();
+  if (!title) { showSnack('请输入书名', 'error'); return; }
+  const result = document.getElementById('coverResult');
+  result.innerHTML = `
+    <div class="cover-preview">
+      <div style="text-align:center">
+        <div class="loading lg"></div>
+        <p style="margin-top:12px" class="muted">AI 正在为您生成封面...</p>
+      </div>
+    </div>
+  `;
+  setTimeout(() => {
+    const colors = BOOK_TEMPLATES[Math.floor(Math.random() * BOOK_TEMPLATES.length)];
+    const seed = title.charCodeAt(0) + title.length;
+    const imgUrl = `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent('A novel cover for "' + title + '", epic fantasy style, cinematic, dramatic lighting, high quality book cover design, 4K')}&image_size=portrait_16_9`;
+    result.innerHTML = `
+      <h3 style="margin-top:24px;margin-bottom:8px;color:var(--primary);font-size:14px;font-weight:600">生成结果</h3>
+      <div class="cover-preview">
+        <img src="${imgUrl}" onerror="this.parentElement.innerHTML='<div class=\\'image-placeholder\\'><div style=\\'font-size:48px\\'>🖼</div><p>封面图生成失败，请检查 API 配置后重试</p></div>'">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-outlined" onclick="generateCover()">🔄 重新生成</button>
+        <button class="btn btn-primary" onclick="showSnack('封面已分享','success')">💾 保存/分享</button>
+      </div>
+    `;
+  }, 1500);
+}
+
+// ============== 书名测试 ==============
+function renderBookCovers() {
+  const title = document.getElementById('bookTitleInput').value.trim();
+  const grid = document.getElementById('bookGrid');
+  const hint = document.getElementById('bookHint');
+  if (!title) {
+    grid.style.display = 'none';
+    hint.style.display = 'block';
+    return;
+  }
+  hint.style.display = 'none';
+  grid.style.display = 'grid';
+  grid.innerHTML = BOOK_TEMPLATES.map(t => {
+    const ratio = POSITION_RATIO[t.id];
+    return `
+      <div class="book-cover" style="background:${t.bg}">
+        <div class="style-tag">${t.name}</div>
+        <div class="book-title" style="top:${ratio * 100 - 5}%; transform:translateY(-50%)">${escapeHtml(title)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============== 角色卡管理 ==============
+function renderCharacters() {
+  const content = document.getElementById('characterListContent');
+  if (state.characters.length === 0) {
+    content.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">👥</div>
+        <h3>暂无角色</h3>
+        <p>点击右下角按钮添加第一个角色</p>
+      </div>
+    `;
+    return;
+  }
+  content.innerHTML = state.characters.map(c => {
+    let details = {};
+    try { details = JSON.parse(c.cardJson); } catch(e) {}
+    const meta = [];
+    if (details.gender) meta.push(details.gender);
+    if (details.age) meta.push(details.age + '岁');
+    if (details.role) meta.push(details.role);
+    return `
+      <div class="char-card">
+        <div class="char-head">
+          <div class="char-avatar">${(c.name || '?')[0]}</div>
+          <div class="char-info">
+            <div class="char-name">${escapeHtml(c.name)}</div>
+            <div class="char-meta">${meta.map(m => `<span class="chip">${escapeHtml(m)}</span>`).join('')}</div>
+          </div>
+          <div class="char-actions">
+            <button onclick="editCharacter(${c.id})" title="编辑">✏</button>
+            <button class="danger" onclick="deleteCharacter(${c.id})" title="删除">🗑</button>
+          </div>
+        </div>
+        <div class="char-detail">
+          ${details.personality ? `<div class="attr-row"><span class="attr-label">性格：</span><span class="attr-value">${escapeHtml(details.personality)}</span></div>` : ''}
+          ${details.appearance ? `<div class="attr-row"><span class="attr-label">外貌：</span><span class="attr-value">${escapeHtml(details.appearance)}</span></div>` : ''}
+          ${details.background ? `<div class="attr-row"><span class="attr-label">背景：</span><span class="attr-value">${escapeHtml(details.background)}</span></div>` : ''}
+          ${details.ability ? `<div class="attr-row"><span class="attr-label">能力：</span><span class="attr-value">${escapeHtml(details.ability)}</span></div>` : ''}
+          ${details.goal ? `<div class="attr-row"><span class="attr-label">目标：</span><span class="attr-value">${escapeHtml(details.goal)}</span></div>` : ''}
+          ${details.relationship ? `<div class="attr-row"><span class="attr-label">关系：</span><span class="attr-value">${escapeHtml(details.relationship)}</span></div>` : ''}
+          <div class="timestamp">最后更新：${formatTime(c.updatedAt)}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function showAddCharacterModal() {
+  state.currentEditingCharId = null;
+  document.getElementById('charModalTitle').textContent = '添加角色';
+  document.getElementById('charNameInput').value = '';
+  document.getElementById('charJsonInput').value = '';
+  document.getElementById('characterModal').classList.add('show');
+}
+
+function editCharacter(id) {
+  const c = state.characters.find(x => x.id === id);
+  if (!c) return;
+  state.currentEditingCharId = id;
+  document.getElementById('charModalTitle').textContent = '编辑角色';
+  document.getElementById('charNameInput').value = c.name;
+  try {
+    document.getElementById('charJsonInput').value = JSON.stringify(JSON.parse(c.cardJson), null, 2);
+  } catch(e) {
+    document.getElementById('charJsonInput').value = c.cardJson;
+  }
+  document.getElementById('characterModal').classList.add('show');
+}
+
+function closeCharacterModal() {
+  document.getElementById('characterModal').classList.remove('show');
+}
+
+function saveCharacter() {
+  const name = document.getElementById('charNameInput').value.trim();
+  const cardJson = document.getElementById('charJsonInput').value.trim();
+  if (!name) { showSnack('请输入角色名称', 'error'); return; }
+  if (!cardJson) { showSnack('请输入角色卡 JSON', 'error'); return; }
+  try { JSON.parse(cardJson); } catch(e) { showSnack('card_json 必须为有效 JSON 格式', 'error'); return; }
+  const now = Date.now();
+  if (state.currentEditingCharId) {
+    const idx = state.characters.findIndex(x => x.id === state.currentEditingCharId);
+    if (idx >= 0) {
+      state.characters[idx] = { ...state.characters[idx], name, cardJson, updatedAt: now };
+    }
+  } else {
+    state.characters.push({ id: now, name, cardJson, createdAt: now, updatedAt: now });
+  }
+  localStorage.setItem('ai_novel_characters', JSON.stringify(state.characters));
+  closeCharacterModal();
+  renderCharacters();
+  showSnack('保存成功', 'success');
+}
+
+function deleteCharacter(id) {
+  if (!confirm('确定要删除该角色吗？此操作不可撤销。')) return;
+  state.characters = state.characters.filter(c => c.id !== id);
+  localStorage.setItem('ai_novel_characters', JSON.stringify(state.characters));
+  renderCharacters();
+  showSnack('角色已删除', 'success');
+}
+
+function formatTime(ts) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+// ============== 一致性检查 ==============
+function initConsistencyPage() {
+  const content = document.getElementById('consistencyContent');
+  content.innerHTML = `
+    <div class="form-group">
+      <label class="form-label">选择项目</label>
+      <select class="form-control" id="consProject" onchange="onProjectChange()">
+        <option value="">请选择小说项目</option>
+        <option value="demo1">示例项目：九天神帝</option>
+        <option value="demo2">示例项目：都市之巅</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">选择角色</label>
+      <select class="form-control" id="consCharacter" onchange="onCharacterChange()">
+        <option value="">请选择要检查的角色</option>
+        ${state.characters.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}
+      </select>
+    </div>
+    <div id="consCardPreview"></div>
+    <button class="btn btn-primary btn-block btn-large" id="consCheckBtn" onclick="startConsistencyCheck()">
+      <span>🔍</span> <span id="consCheckText">开始检查</span>
+    </button>
+    <div id="consStatus"></div>
+    <div id="consResults"></div>
+  `;
+  state.conflicts = [];
+}
+
+function onProjectChange() {
+  state.conflicts = [];
+  document.getElementById('consResults').innerHTML = '';
+  document.getElementById('consStatus').innerHTML = '';
+}
+
+function onCharacterChange() {
+  const id = parseInt(document.getElementById('consCharacter').value);
+  const c = state.characters.find(x => x.id === id);
+  if (!c) { document.getElementById('consCardPreview').innerHTML = ''; return; }
+  let details = {};
+  try { details = JSON.parse(c.cardJson); } catch(e) {}
+  document.getElementById('consCardPreview').innerHTML = `
+    <div class="card">
+      ${Object.entries(details).filter(([k,v]) => v && !['name'].includes(k)).map(([k,v]) => `
+        <div style="margin-bottom:4px;font-size:12px">
+          <span style="color:var(--primary);font-weight:500">${getAttrLabel(k)}：</span>
+          <span style="color:var(--text-primary)">${escapeHtml(String(v))}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function getAttrLabel(k) {
+  return { gender: '性别', age: '年龄', personality: '性格', background: '背景', appearance: '外貌', role: '定位', ability: '能力', goal: '目标', motto: '口头禅', relationship: '关系' }[k] || k;
+}
+
+function startConsistencyCheck() {
+  const project = document.getElementById('consProject').value;
+  const charId = parseInt(document.getElementById('consCharacter').value);
+  if (!project) { showSnack('请先选择小说项目', 'error'); return; }
+  if (!charId) { showSnack('请先选择要检查的角色', 'error'); return; }
+  const c = state.characters.find(x => x.id === charId);
+  if (!c) return;
+  const btn = document.getElementById('consCheckBtn');
+  btn.disabled = true;
+  document.getElementById('consCheckText').innerHTML = '<span class="loading"></span> 检查中...';
+  document.getElementById('consStatus').innerHTML = '<div class="status-banner">🔄 正在扫描章节...</div>';
+  setTimeout(() => {
+    // 模拟冲突
+    state.conflicts = [
+      { id: 1, chapter: 3, preview: c.name + '站在悬崖边，回想起前世被人陷害的种种……', reason: '性别描述不一致：角色卡为男，段落使用"她"' },
+      { id: 2, chapter: 7, preview: c.name + '看着自己乌黑的长发，心中涌起一丝复杂的情绪。', reason: '外貌描述冲突：角色卡为黑发，段落描述不同发色' },
+      { id: 3, chapter: 12, preview: '就在' + c.name + '准备运功修炼的瞬间，一股强大的力量将他击退。', reason: '能力描述冲突：角色卡说明无法修炼，段落提及修炼' }
+    ];
+    document.getElementById('consCheckText').textContent = '开始检查';
+    btn.disabled = false;
+    renderConflictResults(c);
+  }, 1500);
+}
+
+function renderConflictResults(c) {
+  document.getElementById('consStatus').innerHTML = `<div class="status-banner">✓ 检查完成：共扫描 12 个相关段落，发现 ${state.conflicts.length} 处疑似冲突。</div>`;
+  const html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;margin-bottom:8px">
+      <span style="color:var(--primary);font-weight:600">冲突段落列表</span>
+      <div class="checkbox-row" style="padding:0">
+        <div class="checkbox checked" id="selectAllCb" onclick="toggleSelectAll()"></div>
+        <span class="muted" style="font-size:13px">全选</span>
+        <span class="muted" style="font-size:12px;margin-left:8px">${state.conflicts.length} / ${state.conflicts.length}</span>
+      </div>
+    </div>
+    ${state.conflicts.map((item, idx) => `
+      <div class="conflict-card">
+        <div class="checkbox-row">
+          <div class="checkbox checked" onclick="toggleItem(${idx}, this)"></div>
+          <div style="flex:1">
+            <div class="ch-title">第${item.chapter}章</div>
+            <div class="ch-preview">${escapeHtml(item.preview)}</div>
+            <div class="conflict-reason">⚠ ${escapeHtml(item.reason)}</div>
+            <div id="modified_${idx}"></div>
+          </div>
+        </div>
+      </div>
+    `).join('')}
+    <button class="btn btn-primary btn-block btn-large" style="background:var(--primary);margin-top:12px" onclick="startModify()">
+      <span>🔧</span> 逐章修改
+    </button>
+    <button class="btn btn-outlined btn-block btn-large" style="margin-top:8px" onclick="applyChanges()">
+      <span>✓</span> 确认并应用修改
+    </button>
+  `;
+  document.getElementById('consResults').innerHTML = html;
+}
+
+function toggleSelectAll() {
+  const cb = document.getElementById('selectAllCb');
+  const checked = cb.classList.toggle('checked');
+  document.querySelectorAll('.conflict-card .checkbox').forEach(c => {
+    if (checked) c.classList.add('checked'); else c.classList.remove('checked');
+  });
+}
+function toggleItem(idx, el) {
+  el.classList.toggle('checked');
+}
+
+function startModify() {
+  const total = state.conflicts.length;
+  const btn = event.target.closest('button');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span> 修改中...';
+  let i = 0;
+  function next() {
+    if (i >= total) {
+      btn.innerHTML = '<span>🔧</span> 逐章修改';
+      btn.disabled = false;
+      showSnack('修改完成', 'success');
+      return;
+    }
+    setTimeout(() => {
+      const item = state.conflicts[i];
+      item.modifiedText = item.preview.replace(/她|他/, '他/她').replace(/乌黑的长发/, '黑发');
+      const container = document.getElementById('modified_' + i);
+      if (container) {
+        container.innerHTML = `
+          <div class="conflict-modified">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+              <span style="flex:1">${escapeHtml(item.modifiedText)}</span>
+              <button class="icon-btn" onclick='showDiff(${i})' style="color:var(--primary);font-size:16px;flex:none">⇄</button>
+            </div>
+          </div>
+        `;
+      }
+      i++;
+      next();
+    }, 600);
+  }
+  next();
+}
+
+function showDiff(idx) {
+  const item = state.conflicts[idx];
+  if (!item.modifiedText) { showSnack('该段落尚未修改', 'error'); return; }
+  state.currentDiffItem = item;
+  const original = item.preview;
+  const modified = item.modifiedText;
+  // 简单 diff (按词)
+  const oWords = original.split(/(\s+)/);
+  const mWords = modified.split(/(\s+)/);
+  const lcs = computeLCS(oWords, mWords);
+  const diff = backtrack(oWords, mWords, lcs);
+  let adds = 0, dels = 0;
+  const html = diff.map(d => {
+    if (d.type === 'add') { adds++; return `<span class="diff-add">${escapeHtml(d.text)}</span>`; }
+    if (d.type === 'del') { dels++; return `<span class="diff-del">${escapeHtml(d.text)}</span>`; }
+    return escapeHtml(d.text);
+  }).join('');
+  document.getElementById('diffContent').innerHTML = html;
+  document.getElementById('diffStats').textContent = `+${adds} / -${dels}`;
+  document.getElementById('diffModal').classList.add('show');
+}
+
+function closeDiffModal() { document.getElementById('diffModal').classList.remove('show'); }
+function confirmDiff() {
+  if (state.currentDiffItem) state.currentDiffItem.confirmed = true;
+  closeDiffModal();
+  showSnack('已确认修改', 'success');
+}
+
+function applyChanges() {
+  showSnack('修改已成功应用到章节内容', 'success');
+}
+
+function computeLCS(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m+1}, () => new Array(n+1).fill(0));
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
+  return dp;
+}
+function backtrack(a, b, dp) {
+  const result = [];
+  let i = a.length, j = b.length;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && a[i-1] === b[j-1]) { result.unshift({type:'eq', text:a[i-1]}); i--; j--; }
+    else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) { result.unshift({type:'add', text:b[j-1]}); j--; }
+    else { result.unshift({type:'del', text:a[i-1]}); i--; }
+  }
+  return result;
+}
+
+// ============== 设置 ==============
+function loadSettings() {
+  document.getElementById('setTextBaseUrl').value = state.settings.textBaseUrl || '';
+  document.getElementById('setTextApiKey').value = state.settings.textApiKey || '';
+  document.getElementById('setTextModel').value = state.settings.textModelName || '';
+  document.getElementById('setImageBaseUrl').value = state.settings.imageBaseUrl || '';
+  document.getElementById('setImageApiKey').value = state.settings.imageApiKey || '';
+  document.getElementById('setImageModel').value = state.settings.imageModelName || '';
+  document.getElementById('setLocalModelPath').value = state.settings.localModelPath || '';
+  state.localModelLoaded = !!state.settings.localModelLoaded;
+  updateModelStatus();
+}
+
+function saveSettings() {
+  state.settings = {
+    textBaseUrl: document.getElementById('setTextBaseUrl').value.trim(),
+    textApiKey: document.getElementById('setTextApiKey').value.trim(),
+    textModelName: document.getElementById('setTextModel').value.trim(),
+    imageBaseUrl: document.getElementById('setImageBaseUrl').value.trim(),
+    imageApiKey: document.getElementById('setImageApiKey').value.trim(),
+    imageModelName: document.getElementById('setImageModel').value.trim(),
+    localModelPath: document.getElementById('setLocalModelPath').value.trim(),
+    localModelLoaded: state.localModelLoaded
+  };
+  localStorage.setItem('ai_novel_settings', JSON.stringify(state.settings));
+  showSnack('设置已保存', 'success');
+}
+
+function toggleVisibility(id, btn) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.textContent = el.type === 'password' ? '👁' : '🙈';
+}
+
+function toggleSwitch(row) {
+  const sw = row.querySelector('.switch');
+  sw.classList.toggle('on');
+}
+
+function testConnection() {
+  const url = document.getElementById('setTextBaseUrl').value.trim();
+  const key = document.getElementById('setTextApiKey').value.trim();
+  if (!url || !key) { showSnack('请先填写 Base URL 和 API Key', 'error'); return; }
+  showSnack('正在测试连接...', '');
+  setTimeout(() => {
+    showSnack(Math.random() > 0.3 ? '云端连接测试成功' : '云端连接测试失败，请检查配置', Math.random() > 0.3 ? 'success' : 'error');
+  }, 1000);
+}
+
+function toggleLocalModel() {
+  const path = document.getElementById('setLocalModelPath').value.trim();
+  if (!state.localModelLoaded && !path) {
+    showSnack('请先设置模型路径', 'error');
+    return;
+  }
+  state.localModelLoaded = !state.localModelLoaded;
+  state.settings.localModelLoaded = state.localModelLoaded;
+  updateModelStatus();
+  showSnack(state.localModelLoaded ? '本地模型加载成功' : '本地模型已卸载', 'success');
+}
+
+function updateModelStatus() {
+  const dot = document.getElementById('modelStatusDot');
+  const text = document.getElementById('modelStatusText');
+  const btn = document.getElementById('modelToggleBtn');
+  if (state.localModelLoaded) {
+    dot.classList.add('on'); dot.classList.remove('off');
+    text.textContent = '已加载'; text.style.color = 'var(--success)';
+    btn.textContent = '卸载';
+  } else {
+    dot.classList.add('off'); dot.classList.remove('on');
+    text.textContent = '未加载'; text.style.color = '';
+    btn.textContent = '加载';
+  }
+}
+
+// 启动
+init();
+</script>
+</body>
+</html>
